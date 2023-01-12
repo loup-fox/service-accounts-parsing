@@ -1,0 +1,16 @@
+.terraform*
+.vscode/
+node_modules/
+dist/
+*.log
+.yalc
+yalc.lock
+.idea/
+.env
+.venv
+*.pyc
+values.*.yaml
+.DS_Store
+src/.DS_Store
+/bigquery-access.json
+.env.local

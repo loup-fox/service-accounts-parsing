@@ -1,0 +1,36 @@
+{
+  "name": "service-mails-fetching",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc --strict",
+    "dev": "./scripts/dev-nodemon.sh",
+    "start": "./scripts/dev.sh",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^18.11.9",
+    "dotenv": "^16.0.3",
+    "nodemon": "^2.0.20",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.8.4"
+  },
+  "dependencies": {
+    "@aws-sdk/client-kms": "^3.245.0",
+    "@aws-sdk/client-sqs": "^3.245.0",
+    "@fox/logger": "^3.2.6",
+    "env-var": "^7.3.0",
+    "ioredis": "^5.2.4",
+    "mongodb": "^4.13.0",
+    "sqs-consumer": "^6.1.0",
+    "zod": "^3.20.2"
+  }
+}
