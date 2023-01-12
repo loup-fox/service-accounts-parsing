@@ -18,6 +18,7 @@ const MONGODB_USERNAME = env.get("MONGODB_USERNAME").required().asString();
 
 const Parser = z.object({
   _id: z.instanceof(ObjectId),
+  name: z.string(),
   from: z.string(),
   subjectFilter: z.string(),
 });
@@ -91,21 +92,22 @@ const processAccount = async (accountId: string) => {
   while (mailRef !== null) {
     const { uid, sender, boxName, subject } = mailRef;
 
-    Logger.info("sender", sender);
-    Logger.info("subject", subject);
-
     const applicableParsers = parsers.filter((parser) => {
       const rFrom = new RegExp(parser.from.replace(/,/g, "|"), "i");
-      console.log(rFrom.source);
       const rSubject = new RegExp(parser.subjectFilter, "i");
-      const a = rFrom.exec(sender);
-      const b = rSubject.exec(subject);
-      console.log("a", { a });
-      console.log("b", { b });
-      return a && b;
+      return rFrom.exec(sender) && rSubject.exec(subject);
     });
 
-    console.log(applicableParsers.length);
+    if (applicableParsers.length > 0) {
+      console.log({ accountId, length: applicableParsers.length });
+      for (const parser of applicableParsers) {
+        console.log({
+          accountId,
+          parserId: parser._id.toHexString(),
+          parserName: parser.name,
+        });
+      }
+    }
 
     mailRef = await popMailRef(accountId);
   }
