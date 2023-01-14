@@ -64,6 +64,18 @@ const MailReference = z.object({
 });
 export type MailReference = z.infer<typeof MailReference>;
 
+type FetchedMail = {
+  body: {
+    html?: string;
+    text?: string;
+    date: Date;
+    from: string;
+    subject: string;
+    to: string;
+    signature: string;
+  };
+};
+
 const mongo = new MongoClient(
   `mongodb+srv://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@${MONGODB_HOST}`
 );
@@ -120,18 +132,6 @@ const popMailRef = async (accountId: string) => {
     return MailReference.parse(JSON.parse(mail));
   }
   return null;
-};
-
-type FetchedMail = {
-  body: {
-    html?: string;
-    text?: string;
-    date: Date;
-    from: string;
-    subject: string;
-    to: string;
-    signature: string;
-  };
 };
 
 const fetchMails = async (
@@ -192,36 +192,23 @@ const fetchMails = async (
         },
         { uid: true }
       )) {
-        const result: any = { ...message };
-        result.folder_name = box.boxName;
-        result.body = await simpleParser(message.source, {
-          skipHtmlToText: true,
+        const parsedMessage = await simpleParser(message.source, {
+          skipTextToHtml: true,
           skipTextLinks: true,
         });
-        result.body.signature = sha1(
+        const signature = sha1(
           message.internalDate.getTime() +
-            result.body.subject +
-            result.body.from.text +
-            result.body.to
+            (parsedMessage.subject ?? "") +
+            (parsedMessage.from?.text ?? "") +
+            parsedMessage.to
         );
-        if (result.body.attachments && result.body.attachments.length > 0) {
-          const pdfAttachment = result.body.attachments.find(
-            (a: any) =>
-              a.contentType === "application/pdf" ||
-              a.contentType === "application/octet-stream"
-          );
-
-          if (pdfAttachment) {
-            result.body.pdf = await pdf.toHtml(pdfAttachment);
+        const folderName: string = box.boxName;
+        if (parsedMessage.attachments && parsedMessage.attachments.length > 0) {
+          for (const attachment of parsedMessage.attachments) {
+            if (attachment.contentType === "application/pdf") {
+            }
           }
         }
-        console.log("fetched email", {
-          uid: message.uid,
-          boxName: box.boxName,
-          subject: message.envelope.subject,
-          // from: message.envelope.from[0].address,
-          // to: message.envelope.to[0].address,
-        });
       }
       lock.release();
     }
