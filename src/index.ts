@@ -7,12 +7,12 @@ import ioredis from "ioredis";
 import { MongoClient } from "mongodb";
 import { Consumer } from "sqs-consumer";
 import { parseAccountId } from "./helpers/index.js";
+import { DummyParserRepository } from "./process/DummyParserRepository.js";
 import {
   DecryptPayload,
   FetchMails,
   FindAccount,
   GetNewMails,
-  GetParsers,
   ParseMails,
 } from "./process/index.js";
 
@@ -26,7 +26,7 @@ const MONGODB_USERNAME = env.get("MONGODB_USERNAME").required().asString();
 const KEY_ID = env.get("KEY_ID").required().asString();
 const PARSEMAIL_URL = env.get("PARSEMAIL_URL").required().asString();
 
-export const mongo = new MongoClient(
+const mongo = new MongoClient(
   `mongodb+srv://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@${MONGODB_HOST}`
 );
 await mongo.connect();
@@ -36,20 +36,18 @@ const Redis = ioredis.Redis;
 const redis = new Redis(REDIS_URL);
 Logger.info("Redis connected successfully.");
 
-export const axios = Axios.default.create({
+const axios = Axios.default.create({
   baseURL: PARSEMAIL_URL,
 });
 
 const sqs = new SQSClient({
   region: "eu-central-1",
 });
-export const kms = new KMSClient({
+const kms = new KMSClient({
   region: "eu-central-1",
 });
 
-export const getParsers = GetParsers({ mongo });
-
-const parsers = await getParsers();
+const parsers = await DummyParserRepository({ mongo });
 
 const fetchMails = FetchMails({ parsers });
 const parseMails = ParseMails({ parsers, axios });

@@ -3,10 +3,10 @@ import _ from "lodash";
 import { MailReference } from "../types/MailReference.js";
 import { NewMail } from "../types/NewMail.js";
 import { Redis } from "ioredis";
-import { Parser } from "../types/Parser.js";
+import { ParserRepository } from "../types/ParserRepository.js";
 
 export const GetNewMails =
-  ({ redis, parsers }: { redis: Redis; parsers: Record<string, Parser> }) =>
+  ({ redis, parsers }: { redis: Redis; parsers: ParserRepository }) =>
   async (accountId: string): Promise<NewMail[]> => {
     const popMailReferences = async (
       accountId: string
@@ -32,7 +32,7 @@ export const GetNewMails =
     while (mailsRef !== null) {
       for (const mailRef of mailsRef) {
         const { uid, sender, path, subject } = mailRef;
-        const applicableParsers = _.filter(parsers, (parser) => {
+        const applicableParsers = _.filter(parsers.all(), (parser) => {
           const rFrom = new RegExp(parser.from.replace(/,/g, "|"), "i");
           const rSubject = new RegExp(parser.subjectFilter, "i");
           return !!rFrom.exec(sender) && !!rSubject.exec(subject);

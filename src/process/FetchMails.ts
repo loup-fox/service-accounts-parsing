@@ -6,10 +6,10 @@ import { sha1 } from "../helpers/index.js";
 import { DecryptedPayload } from "../types/DecryptedPayload.js";
 import { FetchedMail } from "../types/FetchedMail.js";
 import { NewMail } from "../types/NewMail.js";
-import { Parser } from "../types/Parser.js";
+import { ParserRepository } from "../types/ParserRepository.js";
 
 export type Dependencies = {
-  parsers: Record<string, Parser>;
+  parsers: ParserRepository;
 };
 
 export const FetchMails =
@@ -71,7 +71,7 @@ export const FetchMails =
               typeof parsedMessage.html === "string" ? parsedMessage.html : "";
             const newMail = boxes[path][message.uid];
             const allowedParsers = _.filter(newMail.parsers, (parserName) => {
-              const parser = parsers[parserName];
+              const parser = parsers.get(parserName);
               const rHtmlFilter = new RegExp(parser.htmlFilter, "i");
               return !rHtmlFilter.test(html);
             });

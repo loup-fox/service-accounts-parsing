@@ -4,22 +4,16 @@ import { WithId } from "mongodb";
 import { sha1, getOrderId } from "../helpers/index.js";
 import { Account } from "../types/Account.js";
 import { FetchedMail } from "../types/FetchedMail.js";
-import { Parser } from "../types/Parser.js";
+import { ParserRepository } from "../types/ParserRepository.js";
 import { ParsingServiceResult } from "../types/ParsingServiceResult.js";
 
 export const ParseMails =
-  ({
-    axios,
-    parsers,
-  }: {
-    axios: Axios;
-    parsers: Record<string, WithId<Parser>>;
-  }) =>
+  ({ axios, parsers }: { axios: Axios; parsers: ParserRepository }) =>
   async (account: WithId<Account>, mails: FetchedMail[]) => {
     Logger.info(`Parsing ${mails.length} mails`);
     for (const mail of mails) {
       for (const parserName of mail.parsers) {
-        const parser = parsers[parserName];
+        const parser = parsers.get(parserName);
         const axiosResponse = await axios.post(
           "/parse",
           {
