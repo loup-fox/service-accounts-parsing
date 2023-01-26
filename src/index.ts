@@ -7,6 +7,7 @@ import ioredis from "ioredis";
 import { MongoClient } from "mongodb";
 import { Consumer } from "sqs-consumer";
 import { parseAccountId } from "./helpers/index.js";
+import { BigQueryWriter } from "./process/BigQueryWriter/index.js";
 import { DummyParserRepository } from "./process/DummyParserRepository.js";
 import {
   DecryptPayload,
@@ -25,6 +26,7 @@ const MONGODB_HOST = env.get("MONGODB_HOST").required().asString();
 const MONGODB_USERNAME = env.get("MONGODB_USERNAME").required().asString();
 const KEY_ID = env.get("KEY_ID").required().asString();
 const PARSEMAIL_URL = env.get("PARSEMAIL_URL").required().asString();
+const PROJECT_ID = env.get("PROJECT_ID").required().asString();
 
 const mongo = new MongoClient(
   `mongodb+srv://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@${MONGODB_HOST}`
@@ -54,9 +56,15 @@ const parseMails = ParseMails({ parsers, axios });
 const getNewMails = GetNewMails({ parsers, redis });
 const findAccount = FindAccount({ mongo });
 const decryptPayload = DecryptPayload({ kms, KEY_ID });
+const writeToBq = BigQueryWriter({ PROJECT_ID });
 
 const processAccount = async (accountId: string) => {
   const account = await findAccount(accountId);
+  if (!account.success) {
+    Logger.error("Error finding account", account.error);
+    return;
+  }
+
   const mails = await getNewMails(accountId);
   if (mails.length === 0) {
     Logger.info(`No new mails for account ${accountId}.`);
@@ -65,9 +73,30 @@ const processAccount = async (accountId: string) => {
 
   Logger.info(`Processing ${mails.length} mails for account ${accountId}...`);
 
-  const credentials = await decryptPayload(account.payload);
-  const rawMails = await fetchMails(credentials, mails);
-  const parsedMails = await parseMails(account, rawMails);
+  const credentials = await decryptPayload(account.value.payload);
+  if (!credentials.success) {
+    Logger.error("Error decrypting credentials", credentials.error);
+    return;
+  }
+
+  const rawMails = await fetchMails(credentials.value, mails);
+  if (!rawMails.success) {
+    Logger.error("Error while fetching mails", rawMails.error);
+    return;
+  }
+
+  const parsedMails = await parseMails(account.value, rawMails.value);
+  if (!parsedMails.success) {
+    Logger.error("Error while parsing mails", parsedMails.error);
+    return;
+  }
+
+  Logger.info(`Writing ${parsedMails.value.length} mails to BigQuery...`);
+
+  const writeResult = await writeToBq(parsedMails.value);
+  if (!writeResult.success) {
+    Logger.error("Error writing to BigQuery");
+  }
 };
 
 const consumer = Consumer.create({

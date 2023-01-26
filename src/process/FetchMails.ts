@@ -1,3 +1,4 @@
+import { Failure, Result, Success, Try } from "@fox/lib-common-tools";
 import * as Logger from "@fox/logger";
 import { ImapFlow } from "imapflow";
 import _ from "lodash";
@@ -14,7 +15,10 @@ export type Dependencies = {
 
 export const FetchMails =
   ({ parsers }: Dependencies) =>
-  async (credentials: DecryptedPayload, mails: NewMail[]) => {
+  async (
+    credentials: DecryptedPayload,
+    mails: NewMail[]
+  ): Promise<Result<FetchedMail[]>> => {
     Logger.info(`Fetching ${mails.length} mails`);
     const results: FetchedMail[] = [];
     const signatures: { [key: string]: boolean } = {};
@@ -40,11 +44,18 @@ export const FetchMails =
           pass: credentials.password,
         },
       });
-      await imap.connect();
-      Logger.info(`IMAP connected successfully.`);
+      const connect = await Try(() => imap.connect());
+      if (!connect.success) {
+        Logger.info(`IMAP connected successfully.`);
+        return Failure(connect.error);
+      }
       for (const [path, mails] of _.entries(boxes)) {
         Logger.info(`Fetching mails from box ${path}...`);
-        const lock = await imap.getMailboxLock(path);
+        const lock = await Try(() => imap.getMailboxLock(path));
+        if (!lock.success) {
+          Logger.warn(`Failed to lock box ${path}. Skipping.`);
+          continue;
+        }
 
         try {
           for await (const message of imap.fetch(
@@ -141,12 +152,12 @@ export const FetchMails =
             }
           }
         } finally {
-          lock.release();
+          lock.value.release();
         }
       }
       imap.close();
       Logger.info(`IMAP closed successfully.`);
     }
     Logger.info(`Fetched ${results.length} mails`);
-    return results;
+    return Success(results);
   };
