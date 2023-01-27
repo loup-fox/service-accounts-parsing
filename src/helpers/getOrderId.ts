@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { sha1 } from "./index.js";
+import { sha1 } from "@fox/lib-foxbrain-sdk";
 import { ParsedItem } from "../types/ParsedItem.js";
 
 export function getOrderId(
@@ -10,7 +10,7 @@ export function getOrderId(
     date: Date;
     uid: number;
     data: {
-      originalOrderNumber?: string;
+      originalOrderNumber?: string | number | undefined;
     };
   },
   userId: string

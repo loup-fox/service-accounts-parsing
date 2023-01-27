@@ -28,6 +28,7 @@
     "@aws-sdk/client-kms": "^3.245.0",
     "@aws-sdk/client-sqs": "^3.245.0",
     "@fox/lib-common-tools": "file:.yalc/@fox/lib-common-tools",
+    "@fox/lib-foxbrain-sdk": "file:.yalc/@fox/lib-foxbrain-sdk",
     "@fox/logger": "^3.2.6",
     "@google-cloud/bigquery": "^6.0.3",
     "@types/imapflow": "^1.0.11",
@@ -40,6 +41,7 @@
     "lodash": "^4.17.21",
     "mailparser": "^3.6.3",
     "mongodb": "^4.13.0",
+    "rxjs": "^7.8.0",
     "sqs-consumer": "^6.1.0",
     "zod": "^3.20.2"
   }

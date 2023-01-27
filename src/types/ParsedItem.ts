@@ -41,7 +41,7 @@ export const ParsedItem = z.object({
       orderItemQuantity: z.unknown().optional(),
       orderQuantity: z.unknown().optional(),
       orderTime: z.unknown().optional(),
-      originalOrderNumber: z.string().optional(),
+      originalOrderNumber: z.union([z.string(), z.number()]).optional(),
       originalOrderNumberRaw: z.string().optional(),
       otherFee1: z.unknown().optional(),
       otherFee1Name: z.unknown().optional(),

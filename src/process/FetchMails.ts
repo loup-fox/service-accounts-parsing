@@ -3,8 +3,8 @@ import * as Logger from "@fox/logger";
 import { ImapFlow } from "imapflow";
 import _ from "lodash";
 import { simpleParser } from "mailparser";
-import { sha1 } from "../helpers/index.js";
-import { DecryptedPayload } from "../types/DecryptedPayload.js";
+import { sha1 } from "@fox/lib-foxbrain-sdk";
+import { DecryptedPayload } from "@fox/lib-foxbrain-sdk";
 import { FetchedMail } from "../types/FetchedMail.js";
 import { NewMail } from "../types/NewMail.js";
 import { ParserRepository } from "../types/ParserRepository.js";
@@ -13,14 +13,12 @@ export type Dependencies = {
   parsers: ParserRepository;
 };
 
-export const FetchMails =
-  ({ parsers }: Dependencies) =>
-  async (
+export const FetchMails = ({ parsers }: Dependencies) =>
+  async function* (
     credentials: DecryptedPayload,
     mails: NewMail[]
-  ): Promise<Result<FetchedMail[]>> => {
+  ): AsyncGenerator<Result<FetchedMail>> {
     Logger.info(`Fetching ${mails.length} mails`);
-    const results: FetchedMail[] = [];
     const signatures: { [key: string]: boolean } = {};
     const boxes = _(mails)
       .groupBy((x) => x.path)
@@ -143,7 +141,7 @@ export const FetchMails =
                   signature,
                 },
               };
-              results.push(result);
+              yield Success(result);
               signatures[signature] = true;
             } else {
               // Logger.info(
@@ -158,6 +156,4 @@ export const FetchMails =
       imap.close();
       Logger.info(`IMAP closed successfully.`);
     }
-    Logger.info(`Fetched ${results.length} mails`);
-    return Success(results);
   };

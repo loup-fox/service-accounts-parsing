@@ -5,15 +5,18 @@ export const ParsingServiceSuccess = z.object({
   results: z.array(ParsedItem),
 });
 export const ParsingServiceFailure = z.object({
-  errorType: z.string(),
-  errorMessage: z.string().transform((value) => {
-    return z
-      .object({
-        error: z.string(),
-        logs: z.unknown().array().nullish(),
-      })
-      .parse(JSON.parse(value));
-  }),
+  errorType: z.string().nullish(),
+  errorMessage: z
+    .string()
+    .transform((value) => {
+      return z
+        .object({
+          error: z.string(),
+          logs: z.unknown().array().nullish(),
+        })
+        .parse(JSON.parse(value));
+    })
+    .nullish(),
   trace: z.unknown().array().nullish(),
 });
 export const ParsingServiceResult = z.union([

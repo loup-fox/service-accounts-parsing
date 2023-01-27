@@ -2,42 +2,46 @@ import { Result, Success } from "@fox/lib-common-tools";
 import * as Logger from "@fox/logger";
 import { Axios } from "axios";
 import { WithId } from "mongodb";
-import { sha1, getOrderId } from "../../helpers/index.js";
-import { Account } from "../../types/Account.js";
+import { getOrderId } from "../../helpers/index.js";
+import { sha1, Account } from "@fox/lib-foxbrain-sdk";
 import { FetchedMail } from "../../types/FetchedMail.js";
 import { ParsedDocument } from "../../types/ParsedDocument.js";
 import { ParserRepository } from "../../types/ParserRepository.js";
 import { callParsingLambda } from "./callParsingLambda.js";
 
-export const ParseMails =
-  ({ axios, parsers }: { axios: Axios; parsers: ParserRepository }) =>
-  async (
+export const ParseMails = ({
+  axios,
+  parsers,
+}: {
+  axios: Axios;
+  parsers: ParserRepository;
+}) =>
+  async function* (
     account: WithId<Account>,
     mails: FetchedMail[]
-  ): Promise<Result<ParsedDocument[]>> => {
+  ): AsyncGenerator<Result<ParsedDocument>> {
     Logger.info(`Parsing ${mails.length} mails`);
-    const result: ParsedDocument[] = [];
     for (const mail of mails) {
       for (const parserName of mail.parsers) {
         const parser = parsers.get(parserName);
-        const result = await callParsingLambda(axios, parser, mail);
+        const parsingResult = await callParsingLambda(axios, parser, mail);
 
-        if (!result.success) {
+        if (!parsingResult.success) {
           Logger.info(
             `Failed to call parsing Lambda with mail ${mail.uid} and parser ${parserName}`,
             {
-              error: result.error,
+              error: parsingResult.error,
             }
           );
           continue;
         }
 
-        const { results } = result.value;
+        const { results: items } = parsingResult.value;
         Logger.info(`Parsed mail ${mail.uid} with parser ${parserName}`);
 
-        const enriched = results.map((result, index): ParsedDocument => {
-          return {
-            ...result,
+        for (const [index, item] of items.entries()) {
+          const enriched = {
+            ...item,
             createdAt: mail.headers.date,
             date: mail.headers.date,
             parser: parser.name,
@@ -64,10 +68,10 @@ export const ParseMails =
             index,
             orderId: getOrderId(
               parserName,
-              results,
+              items,
               {
                 data: {
-                  originalOrderNumber: result.data.originalOrderNumber,
+                  originalOrderNumber: item.data.originalOrderNumber,
                 },
                 from: mail.headers.from,
                 date: mail.headers.date,
@@ -76,14 +80,11 @@ export const ParseMails =
               account.userId.toHexString()
             ),
           };
-        });
-
-        Logger.info(`Enriched mail ${mail.uid} with parser ${parserName}`, {
-          enriched,
-        });
-
-        results.concat(enriched);
+          Logger.info(`Enriched mail ${mail.uid} with parser ${parserName}`, {
+            enriched,
+          });
+          yield Success(enriched);
+        }
       }
     }
-    return Success(result);
   };

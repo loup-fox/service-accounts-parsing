@@ -43,9 +43,9 @@ export const callParsingLambda = async (
     Logger.info(axiosResponse.value.data);
     return Failure(parsedResult.error);
   }
-  if ("errorType" in parsedResult.data) {
-    Logger.error("Error while parsing mail", parsedResult.data);
-    return Failure(parsedResult.data.errorMessage.error);
+  if ("results" in parsedResult.data) {
+    return Success(parsedResult.data);
   }
-  return Success(parsedResult.data);
+  Logger.error("Error while parsing mail", parsedResult.data);
+  return Failure(parsedResult.data.errorMessage?.error);
 };

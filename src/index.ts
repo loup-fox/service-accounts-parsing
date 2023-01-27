@@ -1,21 +1,28 @@
 import { KMSClient } from "@aws-sdk/client-kms";
 import { SQSClient } from "@aws-sdk/client-sqs";
+import { DecryptPayload, FindAccount } from "@fox/lib-foxbrain-sdk";
+import { isSuccess, Success } from "@fox/lib-common-tools";
 import * as Logger from "@fox/logger";
 import * as Axios from "axios";
 import env from "env-var";
 import ioredis from "ioredis";
 import { MongoClient } from "mongodb";
+import {
+  buffer,
+  bufferCount,
+  filter,
+  from,
+  lastValueFrom,
+  map,
+  mergeMap,
+  windowCount,
+} from "rxjs";
 import { Consumer } from "sqs-consumer";
 import { parseAccountId } from "./helpers/index.js";
 import { BigQueryWriter } from "./process/BigQueryWriter/index.js";
 import { DummyParserRepository } from "./process/DummyParserRepository.js";
-import {
-  DecryptPayload,
-  FetchMails,
-  FindAccount,
-  GetNewMails,
-  ParseMails,
-} from "./process/index.js";
+import { FetchMails, GetNewMails, ParseMails } from "./process/index.js";
+import { FetchedMail } from "./types/FetchedMail.js";
 
 Logger.info("Starting service-mails-parsing-v2 service.");
 
@@ -56,7 +63,7 @@ const parseMails = ParseMails({ parsers, axios });
 const getNewMails = GetNewMails({ parsers, redis });
 const findAccount = FindAccount({ mongo });
 const decryptPayload = DecryptPayload({ kms, KEY_ID });
-const writeToBq = BigQueryWriter({ PROJECT_ID });
+const writeToBq = BigQueryWriter();
 
 const processAccount = async (accountId: string) => {
   const account = await findAccount(accountId);
@@ -79,24 +86,23 @@ const processAccount = async (accountId: string) => {
     return;
   }
 
-  const rawMails = await fetchMails(credentials.value, mails);
-  if (!rawMails.success) {
-    Logger.error("Error while fetching mails", rawMails.error);
-    return;
-  }
+  const $process = from(fetchMails(credentials.value, mails)).pipe(
+    bufferCount(50),
+    map((mails) => mails.filter(isSuccess).map((x) => x.value)),
+    mergeMap((mails) => parseMails(account.value, mails)),
+    bufferCount(5),
+    map((mails) => mails.filter(isSuccess).map((x) => x.value)),
+    mergeMap((mails) => writeToBq(mails)),
+    map((result) => {
+      if (!result.success) {
+        Logger.error("Error writing to BigQuery", {
+          message: result.error.message,
+        });
+      }
+    })
+  );
 
-  const parsedMails = await parseMails(account.value, rawMails.value);
-  if (!parsedMails.success) {
-    Logger.error("Error while parsing mails", parsedMails.error);
-    return;
-  }
-
-  Logger.info(`Writing ${parsedMails.value.length} mails to BigQuery...`);
-
-  const writeResult = await writeToBq(parsedMails.value);
-  if (!writeResult.success) {
-    Logger.error("Error writing to BigQuery");
-  }
+  return lastValueFrom($process);
 };
 
 const consumer = Consumer.create({
