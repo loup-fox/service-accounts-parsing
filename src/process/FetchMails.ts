@@ -157,3 +157,5 @@ export const FetchMails = ({ parsers }: Dependencies) =>
       Logger.info(`IMAP closed successfully.`);
     }
   };
+
+export type FetchMails = ReturnType<typeof FetchMails>;

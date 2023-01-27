@@ -58,3 +58,5 @@ export const GetNewMails =
     Logger.info(`Got ${mailsToProcess.length} new mails in ${duration}ms.`);
     return mailsToProcess;
   };
+
+export type GetNewMails = ReturnType<typeof GetNewMails>;

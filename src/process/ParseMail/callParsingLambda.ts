@@ -47,5 +47,5 @@ export const callParsingLambda = async (
     return Success(parsedResult.data);
   }
   Logger.error("Error while parsing mail", parsedResult.data);
-  return Failure(parsedResult.data.errorMessage?.error);
+  return Failure(parsedResult.data.errorMessage);
 };

@@ -15,3 +15,5 @@ export const BigQueryWriter = () => {
     return await Try(() => table.insert(rows));
   };
 };
+
+export type BigQueryWriter = ReturnType<typeof BigQueryWriter>;
