@@ -1,9 +1,9 @@
 import * as Logger from "@fox/logger";
 import _ from "lodash";
-import { MailReference } from "../types/MailReference.js";
 import { NewMail } from "../types/NewMail.js";
 import { Redis } from "ioredis";
 import { ParserRepository } from "../types/ParserRepository.js";
+import { MailReference } from "@fox/lib-foxbrain-sdk";
 
 export const GetNewMails =
   ({ redis, parsers }: { redis: Redis; parsers: ParserRepository }) =>

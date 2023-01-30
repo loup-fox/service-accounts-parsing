@@ -129,7 +129,7 @@ export const FetchMails = ({ parsers }: Dependencies) =>
                 html,
                 accountId: newMail.accountId,
                 path,
-                uid: message.uid,
+                uid: message.uid.toString(),
                 parsers: newMail.parsers,
                 headers: {
                   date,

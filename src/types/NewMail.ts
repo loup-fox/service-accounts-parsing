@@ -1,6 +1,6 @@
 export type NewMail = {
   accountId: string;
-  uid: number;
+  uid: string;
   path: string;
   parsers: string[];
 };

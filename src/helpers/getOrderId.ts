@@ -8,7 +8,7 @@ export function getOrderId(
   document: {
     from: string;
     date: Date;
-    uid: number;
+    uid: string;
     data: {
       originalOrderNumber?: string | number | undefined;
     };

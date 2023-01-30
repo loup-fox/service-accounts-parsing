@@ -1,13 +1,12 @@
 import { KMSClient } from "@aws-sdk/client-kms";
 import { SQSClient } from "@aws-sdk/client-sqs";
-import { DecryptPayload, FindAccount } from "@fox/lib-foxbrain-sdk";
+import { DecryptPayload, FindAccount, AnyEvent } from "@fox/lib-foxbrain-sdk";
 import * as Logger from "@fox/logger";
 import * as Axios from "axios";
 import env from "env-var";
 import ioredis from "ioredis";
 import { MongoClient } from "mongodb";
 import { Consumer } from "sqs-consumer";
-import { parseAccountId } from "./helpers/index.js";
 import { BigQueryWriter } from "./process/BigQueryWriter/index.js";
 import { DummyParserRepository } from "./process/DummyParserRepository.js";
 import { FetchMails, GetNewMails, ParseMail } from "./process/index.js";
@@ -59,10 +58,19 @@ const consumer = Consumer.create({
   sqs,
   queueUrl: INPUT_QUEUE,
   async handleMessage({ Body }) {
+    Logger.info("Received message from queue: " + Body);
     try {
-      const accountId = parseAccountId(Body);
-      Logger.info(`Processing account ${accountId}...`);
-      await processAccount(accountId);
+      if (Body) {
+        const event = AnyEvent.parse(JSON.parse(Body));
+        if (event.tag === "account:fetched:1") {
+          Logger.info(`Processing account ${event.modelId}...`);
+          await processAccount(event.modelId);
+        } else {
+          Logger.warn(
+            `Ignoring event ${event.tag} for account ${event.modelId}`
+          );
+        }
+      }
     } catch (error: any) {
       Logger.error(error);
     }

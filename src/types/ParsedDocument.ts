@@ -19,7 +19,7 @@ export const ParsedDocument = z
     parserVersion: z.string(),
     parser: z.string(),
     signature: z.string(),
-    uid: z.number(),
+    uid: z.string(),
     userId: z.string(),
   })
   .merge(ParsedItem);
