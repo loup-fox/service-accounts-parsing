@@ -7,6 +7,7 @@ import env from "env-var";
 import ioredis from "ioredis";
 import { MongoClient } from "mongodb";
 import { Consumer } from "sqs-consumer";
+import { z } from "zod";
 import { BigQueryWriter } from "./process/BigQueryWriter/index.js";
 import { DummyParserRepository } from "./process/DummyParserRepository.js";
 import { FetchMails, GetNewMails, ParseMail } from "./process/index.js";
@@ -54,14 +55,18 @@ const processAccount = ProcessAccount({
   writeToBq: BigQueryWriter(),
 });
 
+const ParseBody = z.object({
+  Message: z.string(),
+});
+
 const consumer = Consumer.create({
   sqs,
   queueUrl: INPUT_QUEUE,
   async handleMessage({ Body }) {
-    Logger.info("Received message from queue: " + Body);
     try {
       if (Body) {
-        const event = AnyEvent.parse(JSON.parse(Body));
+        const { Message } = ParseBody.parse(JSON.parse(Body));
+        const event = AnyEvent.parse(JSON.parse(Message));
         if (event.tag === "account:fetched:1") {
           Logger.info(`Processing account ${event.modelId}...`);
           await processAccount(event.modelId);

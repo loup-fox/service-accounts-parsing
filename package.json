@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-kms": "^3.245.0",
+    "@aws-sdk/client-sns": "^3.261.0",
     "@aws-sdk/client-sqs": "^3.245.0",
     "@fox/lib-common-tools": "file:.yalc/@fox/lib-common-tools",
     "@fox/lib-foxbrain-sdk": "file:.yalc/@fox/lib-foxbrain-sdk",
