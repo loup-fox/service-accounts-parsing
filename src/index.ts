@@ -55,18 +55,13 @@ const processAccount = ProcessAccount({
   writeToBq: BigQueryWriter(),
 });
 
-const ParseBody = z.object({
-  Message: z.string(),
-});
-
 const consumer = Consumer.create({
   sqs,
   queueUrl: INPUT_QUEUE,
   async handleMessage({ Body }) {
     try {
       if (Body) {
-        const { Message } = ParseBody.parse(JSON.parse(Body));
-        const event = AnyEvent.parse(JSON.parse(Message));
+        const event = AnyEvent.parse(JSON.parse(Body));
         if (event.tag === "account:fetched:1") {
           Logger.info(`Processing account ${event.modelId}...`);
           await processAccount(event.modelId);
